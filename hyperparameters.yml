@@ -28,3 +28,70 @@ flappybird1:
     use_lidar: False
   enable_double_dqn: True
   enable_dueling_dqn: True
+racing1:
+  env_id: custom_env/RacingEnv-v0
+  replay_memory_size: 50000
+  mini_batch_size: 32
+  epsilon_init: 1
+  epsilon_decay: 0.999
+  epsilon_min: 0.01
+  network_sync_rate: 50
+  learning_rate_a: 0.001
+  discount_factor_g: 0.99
+  stop_on_reward: 10000
+  fc1_nodes: 256
+  env_make_params:
+    window_horizon: 10
+    car_position_in_window: 3
+    future_uncertainty: 0.1
+    max_vertical_speed: 0.1
+    max_episode_steps: 10000
+    min_road_width: 0.2
+    border_variation: 0.2
+    image_observation: False
+  enable_double_dqn: True
+  enable_dueling_dqn: True
+market1:
+  env_id: custom_env/MarketEnv-v0
+  replay_memory_size: 100000
+  mini_batch_size: 64
+  epsilon_init: 1
+  epsilon_decay: 0.9995
+  epsilon_min: 0.05
+  network_sync_rate: 100
+  learning_rate_a: 0.0005
+  discount_factor_g: 0.99
+  stop_on_reward: 10000
+  fc1_nodes: 512
+  env_make_params:
+    step_minutes: 1
+    max_episode_steps: 5000
+    max_agents_per_frame: 200
+    price_min: 0
+    price_max: 300000
+    price_action_step_percent: 0.1
+  enable_double_dqn: True
+  enable_dueling_dqn: True
+racing1:
+  env_id: custom_env/RacingEnv-v0
+  replay_memory_size: 50000
+  mini_batch_size: 32
+  epsilon_init: 1
+  epsilon_decay: 0.999
+  epsilon_min: 0.01
+  network_sync_rate: 50
+  learning_rate_a: 0.001
+  discount_factor_g: 0.99
+  stop_on_reward: 10000
+  fc1_nodes: 256
+  env_make_params:
+    window_horizon: 10
+    car_position_in_window: 3
+    future_uncertainty: 0.1
+    max_vertical_speed: 0.1
+    max_episode_steps: 10000
+    min_road_width: 0.2
+    border_variation: 0.2
+    image_observation: False
+  enable_double_dqn: True
+  enable_dueling_dqn: True

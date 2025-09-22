@@ -19,6 +19,21 @@ import itertools
 import flappy_bird_gymnasium
 import os
 
+# Enregistrer l'environnement personnalisé
+from custom_env import RacingEnv
+from market_env.market_env import MarketEnv
+import gymnasium as gym
+gym.register(
+    id='custom_env/RacingEnv-v0',
+    entry_point='custom_env:RacingEnv',
+    max_episode_steps=10000,
+)
+gym.register(
+    id='custom_env/MarketEnv-v0',
+    entry_point='market_env.market_env:MarketEnv',
+    max_episode_steps=5000,
+)
+
 # For printing date and time
 DATE_FORMAT = "%m-%d %H:%M:%S"
 
@@ -175,7 +190,16 @@ class Agent():
             # Save model when new best reward is obtained.
             if is_training:
                 if episode_reward > best_reward:
-                    log_message = f"{datetime.now().strftime(DATE_FORMAT)}: New best reward {episode_reward:0.1f} ({(episode_reward-best_reward)/best_reward*100:+.1f}%) at episode {episode}, saving model..."
+                    # Avoid division by zero when previous best is 0
+                    if abs(best_reward) > 1e-9:
+                        pct_change = (episode_reward - best_reward) / abs(best_reward) * 100.0
+                        pct_str = f"{pct_change:+.1f}%"
+                    else:
+                        pct_str = "N/A"
+                    log_message = (
+                        f"{datetime.now().strftime(DATE_FORMAT)}: New best reward {episode_reward:0.1f} "
+                        f"({pct_str}) at episode {episode}, saving model..."
+                    )
                     print(log_message)
                     with open(self.LOG_FILE, 'a') as file:
                         file.write(log_message + '\n')
