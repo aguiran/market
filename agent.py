@@ -29,7 +29,7 @@ gym.register(
     max_episode_steps=10000,
 )
 gym.register(
-    id='custom_env/MarketEnv-v0',
+    id='market_env/MarketEnv-v0',
     entry_point='market_env.market_env:MarketEnv',
     max_episode_steps=5000,
 )
@@ -45,7 +45,6 @@ os.makedirs(RUNS_DIR, exist_ok=True)
 matplotlib.use('Agg')
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-device = 'cpu' # force cpu, sometimes GPU not always faster than CPU due to overhead of moving data to GPU
 
 # Deep Q-Learning Agent
 class Agent():
@@ -82,6 +81,14 @@ class Agent():
         self.LOG_FILE   = os.path.join(RUNS_DIR, f'{self.hyperparameter_set}.log')
         self.MODEL_FILE = os.path.join(RUNS_DIR, f'{self.hyperparameter_set}.pt')
         self.GRAPH_FILE = os.path.join(RUNS_DIR, f'{self.hyperparameter_set}.png')
+        # Checkpoint directory (compatible with Vast.ai docs)
+        default_ckpt_dir = os.environ.get('CHECKPOINT_DIR', '/workspace/checkpoints')
+        try:
+            os.makedirs(default_ckpt_dir, exist_ok=True)
+            self.CKPT_DIR = default_ckpt_dir
+        except Exception:
+            self.CKPT_DIR = os.path.join(RUNS_DIR, 'checkpoints')
+            os.makedirs(self.CKPT_DIR, exist_ok=True)
 
     def run(self, is_training=True, render=False):
         if is_training:
@@ -128,6 +135,7 @@ class Agent():
 
             # Track number of steps taken. Used for syncing policy => target network.
             step_count=0
+            last_loss_value = None
 
             # Track best reward
             best_reward = -9999999
@@ -217,7 +225,7 @@ class Agent():
                 # If enough experience has been collected
                 if len(memory)>self.mini_batch_size:
                     mini_batch = memory.sample(self.mini_batch_size)
-                    self.optimize(mini_batch, policy_dqn, target_dqn)
+                    last_loss_value = self.optimize(mini_batch, policy_dqn, target_dqn)
 
                     # Decay epsilon
                     epsilon = max(epsilon * self.epsilon_decay, self.epsilon_min)
@@ -227,6 +235,20 @@ class Agent():
                     if step_count > self.network_sync_rate:
                         target_dqn.load_state_dict(policy_dqn.state_dict())
                         step_count=0
+
+                # Periodic checkpoint save every 500 episodes
+                if is_training and episode % 500 == 0:
+                    checkpoint = {
+                        'epoch': episode,
+                        'model_state_dict': policy_dqn.state_dict(),
+                        'optimizer_state_dict': self.optimizer.state_dict(),
+                        'loss': float(last_loss_value) if last_loss_value is not None else None,
+                    }
+                    ckpt_path = os.path.join(self.CKPT_DIR, f'checkpoint_{self.hyperparameter_set}_{episode}.pt')
+                    try:
+                        torch.save(checkpoint, ckpt_path)
+                    except Exception:
+                        pass
 
 
     def save_graph(self, rewards_per_episode, epsilon_history):
@@ -303,6 +325,8 @@ class Agent():
         self.optimizer.zero_grad()  # Clear gradients
         loss.backward()             # Compute gradients
         self.optimizer.step()       # Update network parameters i.e. weights and biases
+
+        return float(loss.item())
 
 if __name__ == '__main__':
     # Parse command line inputs
